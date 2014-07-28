@@ -3,23 +3,19 @@
 @Grapes([
         @GrabExclude('org.codehaus.groovy:groovy')
 ])
-import groovyx.net.http.RESTClient
+import fr.dush.tools.restmockgen.RestMockDownloader
 
+import java.nio.file.Paths
 
 // How to make Intellij resolving Grab (groovy) imports?
 
 def greeting = "world"
 println "Hello ${greeting} !"
 
-def medima = new RESTClient('http://dush-temp:8080/api/')
+def medima = new RestMockDownloader('http://dush-temp:8080/api/', Paths.get('target/rest'))
 
 println 'Get random list...'
-def resp = medima.get(
-        path: 'movies/random.json',
-        query: [notNullFields: 'POSTER', size: 20]
+medima.get(
+        'movies/random.json',
+        [notNullFields: 'POSTER', size: 20]
 )
-
-List movies = resp.data.elements
-println "${movies.size()} random movies: "
-movies.each { println "\t- ${it.title}" }
-println ""
