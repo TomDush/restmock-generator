@@ -9,12 +9,10 @@ import java.nio.file.Paths
 
 // How to make Intellij resolving Grab (groovy) imports?
 
-def greeting = "world"
-println "Hello ${greeting} !"
+println "Requesting Medima...."
 
-def medima = new RestMockDownloader('http://dush-temp:8080/api/', Paths.get('target/rest'))
+def medima = new RestMockDownloader('http://dush-temp:8080/api/', Paths.get('../generated/rest'))
 
-println 'Get random list...'
 medima.get(
         'movies/random.json',
         [notNullFields: 'POSTER', size: 20]

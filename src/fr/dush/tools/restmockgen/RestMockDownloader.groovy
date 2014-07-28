@@ -24,7 +24,7 @@ class RestMockDownloader {
     }
 
     void get(String relativePath, Map<String, ?> query) {
-        log.debug "Get path ${relativePath} with ${query}"
+        log.info "Request ${relativePath} with ${query}"
         // Exec REST request
         def result = restClient.get(
                 path: relativePath,
@@ -32,15 +32,17 @@ class RestMockDownloader {
         ) as HttpResponseDecorator
 
         // If success, write it in file
-        if (result.success && result.statusCode == 200) {
-            log.info "Request sucess! Got: ${result.data}"
+        if (result.success && result.status == 200) {
+            log.debug "Request sucess! Got: ${result.data}"
 
-            def builder = new JsonBuilder()
-            builder.content = result.data
-            builder.writeTo new FileWriter(rootPath.resolve(relativePath).toString())
-            
+            def file = rootPath.resolve(relativePath)
+            file.parent.toFile().mkdirs()
+
+            def builder = new JsonBuilder(result.data)
+            builder.writeTo(new FileWriter(file.toString())).close()
+
         } else {
-            throw new RuntimeException("Could not get data from ${relativePath} (with query: ${query}): ${result.statusCode} - ${result.data}")
+            throw new RuntimeException("Could not get data from ${relativePath} (with query: ${query}): ${result.status} - ${result.data}")
         }
 
     }
