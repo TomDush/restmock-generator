@@ -16,14 +16,17 @@ import java.nio.file.Path
 class RestMockDownloader {
 
     RESTClient restClient;
-    Path rootPath;
+    String serverUrl
+    Path localPath;
 
-    RestMockDownloader(String url, Path rootPath) {
-        restClient = new RESTClient(url)
-        this.rootPath = rootPath;
+    RestMockDownloader(String serverUrl, Path localPath) {
+        this.serverUrl = serverUrl
+        this.localPath = localPath
+
+        restClient = new RESTClient(serverUrl)
     }
 
-    void get(String relativePath, Map<String, ?> query) {
+    void get(String relativePath, Map<String, ?> query = [:], Closure callback = null) {
         log.info "Request ${relativePath} with ${query}"
         // Exec REST request
         def result = restClient.get(
@@ -35,7 +38,7 @@ class RestMockDownloader {
         if (result.success && result.status == 200) {
             log.debug "Request sucess! Got: ${result.data}"
 
-            def file = rootPath.resolve(relativePath)
+            def file = localPath.resolve(relativePath)
             file.parent.toFile().mkdirs()
 
             def builder = new JsonBuilder(result.data)
@@ -45,5 +48,19 @@ class RestMockDownloader {
             throw new RuntimeException("Could not get data from ${relativePath} (with query: ${query}): ${result.status} - ${result.data}")
         }
 
+        // Call back
+        if (callback) callback result.data
+    }
+
+    void download(String url) {
+        def outputFile = localPath.resolve(url).toFile()
+        if (!outputFile.exists()) {
+            log.info "Downloading resource: ${url}"
+            outputFile.getParentFile().mkdirs();
+
+            def out = new BufferedOutputStream(new FileOutputStream(outputFile))
+            out << new URL(serverUrl + url).openStream()
+            out.close()
+        }
     }
 }
