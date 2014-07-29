@@ -27,29 +27,34 @@ class RestMockDownloader {
     }
 
     void get(String relativePath, Map<String, ?> query = [:], Closure callback = null) {
-        log.info "Request ${relativePath} with ${query}"
-        // Exec REST request
-        def result = restClient.get(
-                path: relativePath,
-                query: query
-        ) as HttpResponseDecorator
+        // Where the file will be write
+        def file = localPath.resolve(relativePath)
 
-        // If success, write it in file
-        if (result.success && result.status == 200) {
-            log.debug "Request sucess! Got: ${result.data}"
+        if (file.toFile().exists()) log.info "Skip request ${relativePath}: file already exist."
+        else {
+            log.info "Request ${relativePath} with ${query}"
 
-            def file = localPath.resolve(relativePath)
-            file.parent.toFile().mkdirs()
+            // Exec REST request
+            def result = restClient.get(
+                    path: relativePath,
+                    query: query
+            ) as HttpResponseDecorator
 
-            def builder = new JsonBuilder(result.data)
-            builder.writeTo(new FileWriter(file.toString())).close()
+            // If success, write it in file
+            if (result.success && result.status == 200) {
+                log.debug "Request sucess! Got: ${result.data}"
+                file.parent.toFile().mkdirs()
 
-        } else {
-            throw new RuntimeException("Could not get data from ${relativePath} (with query: ${query}): ${result.status} - ${result.data}")
+                def builder = new JsonBuilder(result.data)
+                builder.writeTo(new FileWriter(file.toString())).close()
+
+            } else {
+                throw new RuntimeException("Could not get data from ${relativePath} (with query: ${query}): ${result.status} - ${result.data}")
+            }
+
+            // Call back
+            if (callback) callback result.data
         }
-
-        // Call back
-        if (callback) callback result.data
     }
 
     void download(String url) {

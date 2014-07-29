@@ -7,37 +7,95 @@ import fr.dush.tools.restmockgen.RestMockDownloader
 
 import java.nio.file.Paths
 
-// How to make Intellij resolving Grab (groovy) imports?
 
-println "Requesting Medima...."
+// REST Downloader
+def orig = 'http://dush-temp:8080/'
+def dest = '../generated/rest'
 
-new File('../generated/rest').delete()
+def medima = new RestMockDownloader(orig, Paths.get(dest))
 
-def medima = new RestMockDownloader('http://dush-temp:8080/', Paths.get('../generated/rest'))
-
-medima.get(
-        'api/movies/random.json',
-        [notNullFields: 'POSTER', size: 20],
-        { data ->
-            // Download actor images
-            data.elements.mainActors.picture.each {
-                it.each {
-                    medima.download withSize(it)
-                }
-            }
-
-            // Download posters
-            data.elements.poster.each {
-                medima.download withSize(it)
-            }
-
-            // Movie details
-            data.elements.id.each {
-                medima.get("api/movie/53b87e0cb1b59ca7ddcd6538.json")
-            }
+/** Download images and moVie details */
+def downloaderCl = { data ->
+    // Download actor images
+    data.elements.mainActors.picture.each {
+        it.each {
+            medima.download withSize(it, 'THUMBS')
         }
-)
+    }
 
-String withSize(def url, String size = "DISPLAY") {
+    // Download posters
+    data.elements.poster.each {
+        medima.download withSize(it, 'DISPLAY')
+    }
+
+    // Movie details
+    data.elements.id.each {
+        medima.get("api/movie/${it}.json")
+    }
+}
+
+static String withSize(def url, String size = "DISPLAY") {
     "${url}?size=${size}"
 }
+
+// ** Start to download what we need
+println "Starting to create a mock for rest service Medima: ${orig}..."
+
+// Delete previous mock...
+new File(dest).delete()
+
+
+// Genres
+medima.get('api/medias/genres.json')
+
+// In Progress
+medima.get('api/medias/inProgress.json', [:], { data ->
+    // Download actor images
+    data.mediaSummary.mainActors.picture.each {
+        it.each {
+            medima.download withSize(it, 'THUMBS')
+        }
+    }
+
+    // Download posters
+    data.mediaSummary.poster.each {
+        medima.download withSize(it, 'DISPLAY')
+    }
+
+    // Movie details
+    data.mediaSummary.id.each {
+        medima.get("api/movie/${it}.json")
+    }
+})
+
+// Random, last, alpha movies
+for (sort in ['random', 'last', 'alpha', 'date']) {
+    def query = [size: 20]
+    if (sort == 'random') query.notNullFields = 'POSTER'
+
+    medima.get(
+            "api/movies/${sort}.json",
+            query,
+            downloaderCl
+    )
+}
+
+// Playing...
+medima.get('api/players/playing.json', [:], { data ->
+    // Download actor images
+    data.media.mainActors.picture.each {
+        it.each {
+            medima.download withSize(it, 'THUMBS')
+        }
+    }
+
+    // Download posters
+    data.media.poster.each {
+        medima.download withSize(it, 'DISPLAY')
+    }
+
+    // Movie details
+    data.media.id.each {
+        medima.get("api/movie/${it}.json")
+    }
+})
