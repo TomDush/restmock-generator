@@ -58,6 +58,8 @@ class RestMockDownloader {
     }
 
     void download(String url) {
+        if(url == null || url.isEmpty()) return;
+
         def outputFile = localPath.resolve(url).toFile()
         if (!outputFile.exists()) {
             log.info "Downloading resource: ${url}"

@@ -4,15 +4,15 @@
         @GrabExclude('org.codehaus.groovy:groovy')
 ])
 import fr.dush.tools.restmockgen.RestMockDownloader
+import org.apache.commons.io.FileUtils
 
 import java.nio.file.Paths
-
 
 // ** REST Downloader
 def orig = 'http://dush-temp:8080/'
 def dest = '../generated/rest'
 
-final static def medima = new RestMockDownloader(orig, Paths.get(dest))
+medima = new RestMockDownloader(orig, Paths.get(dest))
 
 // ** UTILS
 
@@ -33,7 +33,7 @@ void loadMovie(def summary) {
     // Movie details
     medima.get("api/movie/${summary.id}.json", [:], { data ->
         // Backdrops
-        data.backdrops.each {medima.download it}
+        data.backdrops.each { medima.download it }
     })
 
 }
@@ -42,7 +42,7 @@ void loadMovie(def summary) {
 println "Starting to create a mock for rest service Medima: ${orig}..."
 
 // Delete previous mock...
-new File(dest).delete()
+FileUtils.deleteDirectory(new File(dest))
 
 // Genres
 medima.get('api/medias/genres.json')
@@ -56,6 +56,7 @@ medima.get('api/medias/inProgress.json', [:], { data ->
 for (sort in ['random', 'last', 'alpha', 'date']) {
     def query = [size: 20]
     if (sort == 'random') query.notNullFields = 'POSTER'
+    if (sort == 'last') query.seen = 'UNSEEN'
 
     medima.get(
             "api/movies/${sort}.json",
