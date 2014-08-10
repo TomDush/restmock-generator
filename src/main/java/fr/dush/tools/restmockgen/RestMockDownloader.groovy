@@ -57,16 +57,21 @@ class RestMockDownloader {
         }
     }
 
-    void download(String url) {
-        if(url == null || url.isEmpty()) return;
+    void download(String url, Map<String, ?> options = [:]) {
+        if (url == null || url.isEmpty()) return;
+
+        def fullUrl = options.isEmpty() ? url : url + '?' + options.entrySet().collect {
+            it.key + '=' + it.value
+        }.join('&')
+
 
         def outputFile = localPath.resolve(url).toFile()
         if (!outputFile.exists()) {
-            log.info "Downloading resource: ${url}"
+            log.info "Downloading resource: ${fullUrl}"
             outputFile.getParentFile().mkdirs();
 
             def out = new BufferedOutputStream(new FileOutputStream(outputFile))
-            out << new URL(serverUrl + url).openStream()
+            out << new URL(serverUrl + fullUrl).openStream()
             out.close()
         }
     }

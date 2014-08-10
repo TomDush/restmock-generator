@@ -9,31 +9,27 @@ import org.apache.commons.io.FileUtils
 import java.nio.file.Paths
 
 // ** REST Downloader
-def orig = 'http://dush-temp:8080/'
+//def orig = 'http://dush-temp:8080/'
+def orig = 'http://localhost:8090/'
 def dest = '../generated/rest'
 
 medima = new RestMockDownloader(orig, Paths.get(dest))
 
 // ** UTILS
 
-/** Download images and moVie details */
-static String withSize(def url, String size = "DISPLAY") {
-    "${url}?size=${size}"
-}
-
 void loadMovie(def summary) {
     // Download actor images
     summary.mainActors.picture.each {
-        medima.download withSize(it, 'THUMBS')
+        medima.download it, [size: 'THUMBS']
     }
 
     // Download posters
-    medima.download withSize(summary.poster, 'DISPLAY')
+    medima.download summary.poster, [size: 'DISPLAY']
 
     // Movie details
     medima.get("api/movie/${summary.id}.json", [:], { data ->
         // Backdrops
-        data.backdrops.each { medima.download it }
+        data.backdrops.each { medima.download it, [size: 'DISPLAY'] }
     })
 
 }
